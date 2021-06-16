@@ -1,4 +1,3 @@
-# Gpu_js
-Gpujs/边缘算法
-
-https://github.com/gpujs/gpu.js
+# gpu-js-Graphic-filter
+gpu-js-Graphic-filter / gpu.js图形滤镜应用  
+link:https://github.com/gpujs/gpu.js

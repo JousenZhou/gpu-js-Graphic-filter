@@ -1,0 +1,14 @@
+input {
+    text-align: right;
+}
+
+label {
+    display: inline-block;
+    width: 60px;
+    text-align: right;
+    margin-right: 20px;
+}
+
+pre {
+    box-shadow: 0 0 10px black;
+}

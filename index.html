@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!--cpu调用的边缘算法-->
+    <script src="js/sobel.js"></script>
+    <!--GPU计算插件-->
+    <script src="js/gpu-browser.js"></script>
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="box">
+    <input id="inputFile" type="file"><br>
+    <label>Canvas</label><br>
+    <label>Width:</label>
+    <label>
+        <input class="text" placeholder="825" type="text">
+    </label>
+    <br>
+    <label>Height:</label><label>
+    <input class="text" disabled placeholder="高度自适应" type="text">
+</label><br>
+    <!--    <input type="button" value="Sobel边缘滤镜" id="edge">-->
+    <P>Sobel边缘算法——滤镜</P>
+    <button id="GPU">GPU计算</button>
+    <button id="CPU" style="margin-left: 20px">CPU计算</button>
+    <button id="reset" style="margin-left: 20px">重置</button>
+    <p class="cpu-timer"></p>
+    <p class="gpu-timer"></p>
+    <br><br><br>
+    <canvas id="canvas" style="max-width: 300px"></canvas>
+</div>
+<div>
+    <p>边缘算法原理:</p>
+    <p>获取canvas画布中每个像素点的颜色rgb的三个值,将三个值求平均得到（灰度值）,</p>
+    <pre>
+        var kernelX = [
+                    [-1,0,1],
+                    [-2,0,2],
+                    [-1,0,1]];
+
+        var kernelY =  [
+                     [-1,-2,-1],
+                     [0,0,0],
+                     [1,2,1]];
+    </pre>
+    <p>将灰度值与KernelX,KernelY卷积因子进行梯度计算,获取X,Y两个值</p>
+    <p> 通过公式[Math.sqrt((X * Y) + (X * Y))>>0]获取边缘值</p>
+</div>
+
+
+</body>
+</html>
+
+<script>
+
+    let img;
+    let inputFile = document.getElementById("inputFile");
+    let text = document.getElementsByClassName("text");
+    inputFile.onchange = function () {
+        let reader = new FileReader();
+        reader.readAsDataURL(this.files[0]);
+        reader.onload = function (e) {
+            img = new Image();
+            img.src = e.currentTarget.result;
+            img.onload = function () {
+                let canvas = document.getElementById("canvas");
+                let ctx = canvas.getContext("2d");
+                document.getElementsByClassName("text");
+                if (text[0].value.length !== 0) {
+                    canvas.width = parseInt(text[0].value);
+                } else {
+                    canvas.width = 825;
+                }
+                let bili = (this.width / this.height).toFixed(2);
+                canvas.height = (canvas.width / bili).toFixed(2);
+                img.width = canvas.width;
+                img.height = canvas.height;
+                ctx.drawImage(this, 0, 0, canvas.width, canvas.height);
+            }
+
+        };
+
+    };
+
+    function Gpu() {
+        var canvas = document.getElementById("canvas");
+        // ___边缘算法________________________________________________________________________
+        const gpu = new GPU();
+        var beginTime = +new Date();
+        const megaKernel = gpu.createKernelMap({
+                getavg: function getAvg(pixel) {
+                    return (pixel[0] + pixel[1] + pixel[2]) / 3;
+                }
+            },
+            function (image) {
+                const pixel = image[this.thread.y][this.thread.x];
+                const kernelX1 = [-1, 0, 1];
+                const kernelX2 = [-2, 0, 2];
+                const kernelX3 = [-1, 0, 1];
+                var pixelX = (
+                    (kernelX1[0] * getAvg(image[this.thread.y - 1][this.thread.x - 1])) +
+                    (kernelX1[1] * getAvg(image[this.thread.y - 1][this.thread.x])) +
+                    (kernelX1[2] * getAvg(image[this.thread.y - 1][this.thread.x + 1])) +
+                    (kernelX2[0] * getAvg(image[this.thread.y][this.thread.x - 1])) +
+                    (kernelX2[1] * getAvg(image[this.thread.y][this.thread.x])) +
+                    (kernelX2[2] * getAvg(image[this.thread.y][this.thread.x + 1])) +
+                    (kernelX3[0] * getAvg(image[this.thread.y + 1][this.thread.x - 1])) +
+                    (kernelX3[1] * getAvg(image[this.thread.y + 1][this.thread.x])) +
+                    (kernelX3[2] * getAvg(image[this.thread.y + 1][this.thread.x + 1]))
+                );
+                const kernelY1 = [-1, -2, -1];
+                const kernelY2 = [0, 0, 0];
+                const kernelY3 = [1, 2, 1];
+
+                var pixelY = (
+                    (kernelY1[0] * getAvg(image[this.thread.y - 1][this.thread.x - 1])) +
+                    (kernelY1[1] * getAvg(image[this.thread.y - 1][this.thread.x])) +
+                    (kernelY1[2] * getAvg(image[this.thread.y - 1][this.thread.x + 1])) +
+                    (kernelY2[0] * getAvg(image[this.thread.y][this.thread.x - 1])) +
+                    (kernelY2[1] * getAvg(image[this.thread.y][this.thread.x])) +
+                    (kernelY2[2] * getAvg(image[this.thread.y][this.thread.x + 1])) +
+                    (kernelY3[0] * getAvg(image[this.thread.y + 1][this.thread.x - 1])) +
+                    (kernelY3[1] * getAvg(image[this.thread.y + 1][this.thread.x])) +
+                    (kernelY3[2] * getAvg(image[this.thread.y + 1][this.thread.x + 1]))
+                );
+                var magnitude = Math.sqrt((pixelX * pixelX) + (pixelY * pixelY));
+                // this.color((pixel[0] + pixel[1] + pixel[2]) / 3 + pixelX, (pixel[0] + pixel[1] + pixel[2]) / 3, (pixel[0] + pixel[1] + pixel[2]) / 3, pixel[3]);
+                this.color(magnitude, magnitude, magnitude, pixel[3])
+            }).setGraphical(true)
+            .setOutput([canvas.width, canvas.height]);
+        megaKernel(img);
+        var endTime = +new Date();
+        const canvasl = megaKernel.canvas;
+        document.getElementsByClassName('box')[0].removeChild(canvas);
+        canvasl.style.maxWidth = '300px';
+        document.getElementsByClassName('box')[0].appendChild(canvasl);
+        document.getElementsByClassName('gpu-timer')[0].innerText = "GPU计算时间" + (endTime - beginTime) + "ms"
+    }
+
+    function Cpu() {
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        // ___边缘算法________________________________________________________________________
+        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var collectors = [];
+        var beginTime = +new Date();
+        Sobel(imgData, function (value) {
+            collectors.push(value);
+        });
+        var w = imgData.width;
+        var h = imgData.height;
+        var num = 0;
+        for (var s = 0; s < w * h * 4; s += 4) {
+            imgData.data[s] = collectors[num];
+            imgData.data[s + 1] = collectors[num];
+            imgData.data[s + 2] = collectors[num];
+            num++
+        }
+        ctx.putImageData(imgData, 0, 0);
+        var endTime = +new Date();
+        document.getElementsByClassName('cpu-timer')[0].innerText = "CPU计算时间" + (endTime - beginTime) + "ms"
+    }
+
+    document.getElementById('GPU').onclick = function () {
+        Gpu();
+    };
+    document.getElementById('CPU').onclick = function () {
+        Cpu();
+    };
+    document.getElementById('reset').onclick = function () {
+        window.location.reload();
+    }
+
+</script>
+
+
