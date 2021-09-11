@@ -12,7 +12,7 @@
   </sub>
 </p>
 <p>
-<a href="https://github.com/JousenZhou/display-editor"><img src="https://img.shields.io/badge/Github Page-JousenZhou-yellow" /></a>
+<a href="https://github.com/JousenZhou/gpu-js-Graphic-filter"><img src="https://img.shields.io/badge/Github Page-JousenZhou-yellow" /></a>
 <a href="https://github.com/JousenZhou"><img src="https://img.shields.io/badge/Author-Jousen-blueviolet" /></a>
 </div>
 
