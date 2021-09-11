@@ -19,4 +19,7 @@
 
 # Usage 
 
-<a href="https://github.com/JousenZhou/display-editor"><img src="https://img.shields.io/badge/体验地址-green" /></a>： https://jousenzhou.github.io/gpu-js-Graphic-filter/index.html
+<a  href="https://jousenzhou.github.io/gpu-js-Graphic-filter/index.html">
+  <img src="https://img.shields.io/badge/体验地址-green"/>
+  https://jousenzhou.github.io/gpujsGraphicfilter/index.html
+</a>
